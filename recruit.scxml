@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="None">
+  <state id="None">
+    <transition event="place" target="ask_budget_or_genre"/>
+    <transition event="budget" target="ask_place_or_genre"/>
+    <transition event="genre" target="ask_place_or_budget"/>
+    <transition event="place_and_budget" target="ask_genre"/>
+    <transition event="place_and_genre" target="ask_budget"/>
+    <transition event="budget_and_genre" target="ask_place"/>
+    <transition event="place_and_budget_and_genre" target="tell_info"/>
+  </state>
+  <state id="ask_budget_or_genre">
+    <transition event="budget" target="ask_genre"/>
+    <transition event="genre" target="ask_budget"/>
+    <transition event="budget_and_genre" target="tell_info"/>
+  </state>
+  <state id="ask_place_or_genre">
+    <transition event="place" target="ask_genre"/>
+    <transition event="genre" target="ask_place"/>
+    <transition event="place_and_genre" target="tell_info"/>
+  </state>
+  <state id="ask_place_or_budget">
+    <transition event="place" target="ask_budget"/>
+    <transition event="budget" target="ask_place"/>
+    <transition event="place_and_budget" target="tell_info"/>
+  </state>
+  <state id="ask_place">
+    <transition event="place" target="tell_info"/>
+  </state>
+  <state id="ask_budget">
+    <transition event="budget" target="tell_info"/>
+  </state>
+  <state id="ask_genre">
+    <transition event="genre" target="tell_info"/>
+  </state>
+  <final id="tell_info"/>
+</scxml>
