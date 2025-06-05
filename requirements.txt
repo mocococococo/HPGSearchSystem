@@ -1,0 +1,5 @@
+google.generativeai
+requests
+loging
+PySide6
+python-telegram-bot

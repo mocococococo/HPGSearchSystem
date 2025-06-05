@@ -13,31 +13,54 @@ class HotPepper:
     def __init__(self):
         self.APIKEY = getAPI("RecruitAPIKey")
         self.gourmetRequest = "http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key={}".format(self.APIKEY)
-        self.AreaRequest = "http://webservice.recruit.co.jp/hotpepper/large_area/v1/?key={}&keyword={}&format=json".format(self.APIKEY, "{}")
+        self.LargeAreaRequest = "http://webservice.recruit.co.jp/hotpepper/large_area/v1/?key={}&keyword={}&format=json".format(self.APIKEY, "{}")
+        self.MiddleAreaRequest = "http://webservice.recruit.co.jp/hotpepper/middle_area/v1/?key={}&keyword={}&format=json".format(self.APIKEY, "{}")
+        self.SmallAreaRequest = "http://webservice.recruit.co.jp/hotpepper/small_area/v1/?key={}&keyword={}&format=json".format(self.APIKEY, "{}")
         self.BudgetRequest = "http://webservice.recruit.co.jp/hotpepper/budget/v1/?key={}&format=json".format(self.APIKEY)
         self.GenreRequest = "http://webservice.recruit.co.jp/hotpepper/genre/v1/?key={}&keyword={}&format=json".format(self.APIKEY, "{}")
-        self.AREA = "&large_area={}"
+        self.LARGE_AREA = "&large_area={}"
+        self.MIDDLE_AREA = "&middle_area={}"
+        self.SMALL_AREA = "&small_area={}"
         self.BUDGET = "&budget={}"
         self.GENRE = "&genre={}"
         self.END = "&order=4&format=json"
-        self.Area = ""
+        self.LargeArea = ""
+        self.MiddleArea = ""
+        self.SmallArea = ""
         self.Genre = ""
         self.Budget = ""
         self.RestaurantNameList = []
         
     def getArea_code(self, area: str) -> str:
         """エリアのコードを取得する関数"""
-        print(f"requesting area: {self.AreaRequest.format(area)}")
-        response = requests.get(self.AreaRequest.format(area))
-        if response.status_code == 200:
-            response = response.json()
-            print(response)
-            code = response["results"]["large_area"][0]["code"]
-            print(f"Area code for {area}: {code}")
-            return code
-        else:
-            logging.error(f"Error fetching area data: {response.status_code}")
-            return ""
+        print(f"requesting area: {self.LargeAreaRequest.format(area)}")
+        print(f"requesting area: {self.MiddleAreaRequest.format(area)}")
+        print(f"requesting area: {self.SmallAreaRequest.format(area)}")
+        large_response = requests.get(self.LargeAreaRequest.format(area))
+        middle_response = requests.get(self.MiddleAreaRequest.format(area))
+        small_response = requests.get(self.SmallAreaRequest.format(area))
+        if large_response.status_code == 200:
+            large_response = large_response.json()
+            print(large_response)
+            if int(large_response["results"]["results_returned"]) > 0:
+                code = large_response["results"]["large_area"][0]["code"]
+                print(f"Area code for {area}: {code}")
+                return "L", code
+        if middle_response.status_code == 200:
+            middle_response = middle_response.json()
+            print(middle_response)
+            if int(middle_response["results"]["results_returned"]) > 0:
+                code = middle_response["results"]["middle_area"][0]["code"]
+                print(f"Area code for {area}: {code}")
+                return "M", code
+        if small_response.status_code == 200:
+            small_response = small_response.json()
+            print(small_response)
+            if int(small_response["results"]["results_returned"]) > 0:
+                code = small_response["results"]["small_area"][0]["code"]
+                print(f"Area code for {area}: {code}")
+                return "S", code
+        return "", ""
         
 
     def getBudget_json(self) -> dict:
@@ -78,8 +101,15 @@ class HotPepper:
     
     def getRestaurantInfo(self) -> int:
         self.RestaurantNameList = []
-        gourmetRequest = self.gourmetRequest + self.AREA.format(self.Area) + self.BUDGET.format(self.Budget) + self.GENRE.format(self.Genre)
-        gourmetRequest += self.END
+        print(f"{self.LargeArea}, {self.MiddleArea}, {self.SmallArea}, {self.Budget}, {self.Genre}")
+        gourmetRequest = self.gourmetRequest
+        if self.LargeArea != "":
+            gourmetRequest += self.LARGE_AREA.format(self.LargeArea)
+        elif self.MiddleArea != "":
+            gourmetRequest += self.MIDDLE_AREA.format(self.MiddleArea)
+        elif self.SmallArea != "":
+            gourmetRequest += self.SMALL_AREA.format(self.SmallArea)
+        gourmetRequest += self.BUDGET.format(self.Budget) + self.GENRE.format(self.Genre) + self.END
         print(f"requesting gourmet: {gourmetRequest}")
         response = requests.get(gourmetRequest)
         if response.status_code == 200:
@@ -102,21 +132,26 @@ class HotPepper:
         
     def setArea(self, area_list: list[str]) -> int:
         """エリアコードをURLパラメータ形式に変換する関数"""
-        self.Area = ""
+        self.LargeArea = ""
+        self.MiddleArea = ""
+        self.SmallArea = ""
         area_codes = []
         print(f"Area list: {area_list}")
         for area in area_list:
             print("area:", area)
-            area_code = self.getArea_code(area)
-            if area_code:
+            type, area_code = self.getArea_code(area)
+            if area_code != "":
                 area_codes.append(area_code)
-        if area_codes is None or len(area_codes) == 0:
-            self.Area = ""
-            return 0
-        for i in range(min(len(area_codes)-1, 2)):
-            self.Area += area_codes[i] + ","
-        self.Area += area_codes[-1]
-        print(f"Area code set to: {self.Area}")
+                if type == "L":
+                    self.LargeArea += area_code + ","
+                elif type == "M":
+                    self.MiddleArea += area_code + ","
+                elif type == "S":
+                    self.SmallArea += area_code + ","
+        self.LargeArea = self.LargeArea.rstrip(',')
+        self.MiddleArea = self.MiddleArea.rstrip(',')
+        self.SmallArea = self.SmallArea.rstrip(',')        
+        print(f"Area code set to: {self.LargeArea}, {self.MiddleArea}, {self.SmallArea}")
         return len(area_codes)
         
     def setBudget(self, budget: int) -> None:
